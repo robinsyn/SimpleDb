@@ -33,6 +33,10 @@ public class TupleDesc implements Serializable {
             this.fieldType = t;
         }
 
+        public String getFieldName() {
+            return fieldName;
+        }
+
         public Type getFieldType() {
             return fieldType;
         }
@@ -148,7 +152,20 @@ public class TupleDesc implements Serializable {
      */
     public int fieldNameToIndex(String name) throws NoSuchElementException {
         // some code goes here
-        return 0;
+        if(name == null){
+            throw new NoSuchElementException();
+        }
+        for (int i = 0; i < tupleDescList.size(); i++) {
+            String tmp = tupleDescList.get(i).getFieldName();
+            if(tmp == null){
+                continue;
+            }
+            if (tmp.equals(name)) {
+                return i;
+            }
+        }
+
+        throw new NoSuchElementException();
     }
 
     /**
@@ -199,6 +216,17 @@ public class TupleDesc implements Serializable {
 
     public boolean equals(Object o) {
         // some code goes here
+        if(o instanceof TupleDesc){
+            List<TDItem> tmp = ((TupleDesc) o).tupleDescList;
+            if(tmp.size() == tupleDescList.size()){
+                for (int i = 0; i < tupleDescList.size(); i++) {
+                    if(!tupleDescList.get(i).getFieldType().equals(tmp.get(i).getFieldType())){
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
         return false;
     }
 
