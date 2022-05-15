@@ -33,7 +33,7 @@ public class RecordId implements Serializable {
      */
     public int getTupleNumber() {
         // some code goes here
-        return 0;
+        return tupleno;
     }
 
     /**
@@ -41,7 +41,7 @@ public class RecordId implements Serializable {
      */
     public PageId getPageId() {
         // some code goes here
-        return null;
+        return pageId;
     }
 
     /**
@@ -53,7 +53,12 @@ public class RecordId implements Serializable {
     @Override
     public boolean equals(Object o) {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        if(o instanceof RecordId){
+            if(((RecordId) o).getPageId() .equals( pageId) && ((RecordId) o).tupleno == tupleno){
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -65,7 +70,7 @@ public class RecordId implements Serializable {
     @Override
     public int hashCode() {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return (tupleno+"").hashCode() + (pageId+"").hashCode();
 
     }
 

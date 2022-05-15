@@ -23,12 +23,59 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    private List<Mytable> mytables ;
+
+    public class Mytable{
+        DbFile file;
+        String name;
+        String pkeyField;
+        public Mytable(DbFile file, String name, String pkeyField) {
+            this.file = file;
+            this.name = name;
+            this.pkeyField = pkeyField;
+        }
+
+        public DbFile getFile() {
+            return file;
+        }
+
+        public void setFile(DbFile file) {
+            this.file = file;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getPkeyField() {
+            return pkeyField;
+        }
+
+        public void setPkeyField(String pkeyField) {
+            this.pkeyField = pkeyField;
+        }
+
+        @Override
+        public String toString() {
+            return "Mytable{" +
+                    "file=" + file +
+                    ", name='" + name + '\'' +
+                    ", pkeyField='" + pkeyField + '\'' +
+                    '}';
+        }
+    }
+
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
         // some code goes here
+        mytables = new ArrayList<>();
     }
 
     /**
@@ -42,6 +89,18 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+        Mytable mytable = new Mytable(file,name,pkeyField);
+        for (int i = 0; i < mytables.size(); i++) {
+            Mytable tmp = mytables.get(i);
+            if(tmp.getName() ==null){
+                continue;
+            }
+            if(tmp.getName().equals(name) || tmp.getFile().getId() == file.getId()){
+                mytables.set(i,mytable);
+                return;
+            }
+        }
+        mytables.add(mytable);
     }
 
     public void addTable(DbFile file, String name) {
@@ -65,7 +124,18 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
-        return 0;
+        if(name == null){
+            throw new NoSuchElementException();
+        }
+        for (int i = 0; i < mytables.size(); i++) {
+            if(mytables.get(i).getName() == null){
+                continue;
+            }
+            if(mytables.get(i).getName() == name){
+                return mytables.get(i).getFile().getId();
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     /**
@@ -76,7 +146,13 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        for (int i = 0; i < mytables.size(); i++) {
+            DbFile dbFile = mytables.get(i).getFile();
+            if(dbFile.getId() == tableid){
+                return dbFile.getTupleDesc();
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     /**
@@ -87,7 +163,13 @@ public class Catalog {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        for (int i = 0; i < mytables.size(); i++) {
+            DbFile dbFile = mytables.get(i).getFile();
+            if(dbFile.getId() == tableid){
+                return dbFile;
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     public String getPrimaryKey(int tableid) {
@@ -102,11 +184,18 @@ public class Catalog {
 
     public String getTableName(int id) {
         // some code goes here
-        return null;
+        for (int i = 0; i < mytables.size(); i++) {
+            DbFile dbFile = mytables.get(i).getFile();
+            if(dbFile.getId() == id){
+                return mytables.get(i).getName();
+            }
+        }
+        throw new NoSuchElementException();
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
+        mytables.clear();
         // some code goes here
     }
     
