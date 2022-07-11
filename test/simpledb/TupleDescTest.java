@@ -103,6 +103,7 @@ public class TupleDescTest extends SimpleDbTestBase {
                 Assert.fail("foo is not a valid field name");
             } catch (NoSuchElementException e) {
                 // expected to get here
+                System.out.println("没有foo");
             }
             
             // Make sure you throw exception for null searches
@@ -111,6 +112,7 @@ public class TupleDescTest extends SimpleDbTestBase {
                 Assert.fail("null is not a valid field name");
             } catch (NoSuchElementException e) {
                 // expected to get here
+                System.out.println("输入了一个空值");
             }
 
             // Make sure you throw exception when all field names are null
@@ -120,6 +122,7 @@ public class TupleDescTest extends SimpleDbTestBase {
                 Assert.fail("no fields are named, so you can't find it");
             } catch (NoSuchElementException e) {
                 // expected to get here
+                System.out.println("没有foo这个字段");
             }
         }
     }    

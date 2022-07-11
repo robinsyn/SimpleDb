@@ -4,11 +4,13 @@ import simpledb.common.Database;
 import simpledb.common.Permissions;
 import simpledb.common.DbException;
 import simpledb.common.DeadlockException;
+import simpledb.transaction.LockManager;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.*;
 
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -32,6 +34,9 @@ public class BufferPool {
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
+    private int numPages;
+    private final ConcurrentHashMap<PageId, Page> map;
+
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -39,7 +44,10 @@ public class BufferPool {
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
+
         // some code goes here
+        this.numPages = numPages;
+        map = new ConcurrentHashMap<>();
     }
     
     public static int getPageSize() {
@@ -74,7 +82,13 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        Page page = map.get(pid);
+        if (page == null) {
+            page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
+            addToBufferPool(pid, page);
+        }
+
+        return page;
     }
 
     /**
@@ -99,6 +113,7 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid) {
         // some code goes here
         // not necessary for lab1|lab2
+        transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
@@ -118,6 +133,7 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid, boolean commit) {
         // some code goes here
         // not necessary for lab1|lab2
+
     }
 
     /**
@@ -139,6 +155,21 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+    }
+
+    /**
+     * load page into buffer pool, if buffer pool is full, evict a page
+     *
+     * @param id
+     * @param page
+     * @throws DbException
+     */
+    private void addToBufferPool(PageId id, Page page) throws DbException {
+        if (!map.containsKey(id) && map.size() >= this.numPages) {
+            evictPage();
+        }
+
+        map.put(id, page);
     }
 
     /**
@@ -208,5 +239,7 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
     }
+
+
 
 }

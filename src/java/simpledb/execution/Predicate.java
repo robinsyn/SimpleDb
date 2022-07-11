@@ -11,6 +11,20 @@ import java.io.Serializable;
 public class Predicate implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    /**
+     * 比较的列在tuple中的索引
+     */
+    private final int fieldNum;
+
+    /**
+     * compare operation
+     */
+    private final Op op;
+
+    /**
+     * 比较的数,相当于select * from table where id >= 10中10这个比较数
+     */
+    private final Field operand;
 
     /** Constants used for return codes in Field.compare */
     public enum Op implements Serializable {
@@ -59,6 +73,9 @@ public class Predicate implements Serializable {
      */
     public Predicate(int field, Op op, Field operand) {
         // some code goes here
+        this.fieldNum = field;
+        this.op = op;
+        this.operand = operand;
     }
 
     /**
@@ -100,7 +117,8 @@ public class Predicate implements Serializable {
      */
     public boolean filter(Tuple t) {
         // some code goes here
-        return false;
+        boolean res = t.getField(this.fieldNum).compare(op, this.operand);
+        return res;
     }
 
     /**

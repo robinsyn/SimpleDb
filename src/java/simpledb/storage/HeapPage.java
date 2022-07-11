@@ -302,12 +302,9 @@ public class HeapPage implements Page {
      */
     public boolean isSlotUsed(int i) {
         // some code goes here
-        int index = i / 8;
-        int offset = i % 8;
-        int tmp = 1 << (offset);
-        byte b = header[index];
-        int res = ((b & tmp) >>> (offset));
-        return res == 1;
+        int index = i / 8; //在bitmap的第几个字节中
+        int offset = i % 8; //在第几个字节中的偏移量
+        return (header[index] & (1 << offset)) != 0; //判断是否为1，即该slot是否填充
     }
 
     /**
@@ -324,14 +321,12 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // some code goes here
-        List<Tuple> tuples = new ArrayList<>();
-        int num = getNumTuples();
-        for (int i = 0; i < num; i++) {
-            if (isSlotUsed(i)) {
-                tuples.add(this.tuples[i]);
-            }
+        List<Tuple> list = new ArrayList<>();
+        for (int i = 0; i < tuples.length; i++) {
+            if (isSlotUsed(i))
+                list.add(tuples[i]);
         }
-        return tuples.iterator();
+        return list.iterator();
     }
 
 }

@@ -20,7 +20,7 @@ public class Tuple implements Serializable {
 
     private TupleDesc tupleDesc;
     private RecordId recordId;
-    private List<Field> fieldList ;
+    private Field[] fields;
 
     private static final long serialVersionUID = 1L;
 
@@ -33,8 +33,11 @@ public class Tuple implements Serializable {
      */
     public Tuple(TupleDesc td) {
         // some code goes here
+        int len = td.numFields();
+        if (len <= 0) throw new IllegalArgumentException("TupleDesc instance must be at least one field");
         tupleDesc = td;
-        fieldList  = new ArrayList<>(td.numFields());
+        this.fields = new Field[len];
+
     }
 
     /**
@@ -75,11 +78,14 @@ public class Tuple implements Serializable {
      */
     public void setField(int i, Field f) {
         // some code goes here
-        if(i>=fieldList.size()) {
-            fieldList.add(i, f);
-        }else {
-            fieldList.set(i, f);
-        }
+        if (!checkIndex(i)) throw new IllegalArgumentException("index {" + i + "} is not invalid");
+        this.fields[i] = f;
+    }
+
+    public boolean checkIndex(int i) {
+        int len = this.fields.length;
+        if (i < 0 || i >= len) return false;
+        return true;
     }
 
     /**
@@ -90,10 +96,8 @@ public class Tuple implements Serializable {
      */
     public Field getField(int i) {
         // some code goes here
-        if(i<0 || i>= fieldList.size()){
-            return null;
-        }
-        return fieldList.get(i);
+        if (!checkIndex(i)) throw new IllegalArgumentException("index {" + i + "} is not invalid");
+        return this.fields[i];
     }
 
     /**
@@ -106,7 +110,12 @@ public class Tuple implements Serializable {
      */
     public String toString() {
         // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < tupleDesc.numFields() - 1; ++i) {
+            sb.append(fields[i].toString() + "\t");
+        }
+        sb.append(fields[tupleDesc.numFields() - 1].toString() + "\n");
+        return sb.toString();
     }
 
     /**

@@ -32,7 +32,7 @@ public interface DbFileIterator{
 
     /**
      * Resets the iterator to the start.
-     * @throws DbException When rewind is unsupported.
+     * @throws DbException When c is unsupported.
      */
     void rewind() throws DbException, TransactionAbortedException;
 

@@ -14,6 +14,14 @@ public class Join extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private final JoinPredicate p;
+
+    private OpIterator it1;
+
+    private OpIterator it2;
+
+    private Tuple t;
+
     /**
      * Constructor. Accepts two children to join and the predicate to join them
      * on
@@ -27,6 +35,10 @@ public class Join extends Operator {
      */
     public Join(JoinPredicate p, OpIterator child1, OpIterator child2) {
         // some code goes here
+        this.p = p;
+        this.it1 = child1;
+        this.it2 = child2;
+        this.t = null;
     }
 
     public JoinPredicate getJoinPredicate() {
@@ -60,12 +72,16 @@ public class Join extends Operator {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        TupleDesc tupleDesc = TupleDesc.merge(it1.getTupleDesc(), it2.getTupleDesc());
+        return tupleDesc;
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // some code goes here
+        it1.open();
+        it2.open();
+        super.open();
     }
 
     public void close() {
@@ -74,6 +90,8 @@ public class Join extends Operator {
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
+        it1.rewind();
+        it2.rewind();
     }
 
     /**
@@ -96,6 +114,33 @@ public class Join extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
+        while (this.it1.hasNext() || this.t != null) {
+            if (this.it1.hasNext() && this.t == null) {
+                t = it1.next();
+            }
+            while (it2.hasNext()) {
+                Tuple t2 = it2.next();
+                if (p.filter(t, t2)) {
+                    TupleDesc td1 = t.getTupleDesc();
+                    TupleDesc td2 = t2.getTupleDesc();
+                    TupleDesc newTd = TupleDesc.merge(td1, td2);
+                    Tuple newTuple = new Tuple(newTd);
+                    newTuple.setRecordId(t.getRecordId());
+                    int i = 0;
+                    for (; i < td1.numFields(); ++i)
+                        newTuple.setField(i, t.getField(i));
+                    for (int j = 0; j < td2.numFields(); ++j)
+                        newTuple.setField(i + j, t2.getField(j));
+                    if (!it2.hasNext()) {
+                        it2.rewind();
+                        t = null;
+                    }
+                    return newTuple;
+                }
+            }
+            it2.rewind();
+            t = null;
+        }
         return null;
     }
 

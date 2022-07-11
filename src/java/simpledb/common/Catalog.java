@@ -23,49 +23,37 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
-    private List<Mytable> mytables ;
+    // use map to get Table
+    // key ：value ——> tableid ：Mytable
+    private final ConcurrentHashMap<Integer, Mytable> map;
 
+    //catalog中放的table
     public class Mytable{
-        DbFile file;
-        String name;
-        String pkeyField;
-        public Mytable(DbFile file, String name, String pkeyField) {
-            this.file = file;
+
+        private static final long serialVersionUID = 1L;
+
+        private final DbFile dbFile;
+
+        private final String name;
+
+        private final String pkeyField;
+
+        public Mytable (DbFile dbFile, String name, String pkeyField) {
+            this.dbFile = dbFile;
             this.name = name;
             this.pkeyField = pkeyField;
         }
 
-        public DbFile getFile() {
-            return file;
-        }
-
-        public void setFile(DbFile file) {
-            this.file = file;
+        public DbFile getDbFile() {
+            return dbFile;
         }
 
         public String getName() {
             return name;
         }
 
-        public void setName(String name) {
-            this.name = name;
-        }
-
         public String getPkeyField() {
             return pkeyField;
-        }
-
-        public void setPkeyField(String pkeyField) {
-            this.pkeyField = pkeyField;
-        }
-
-        @Override
-        public String toString() {
-            return "Mytable{" +
-                    "file=" + file +
-                    ", name='" + name + '\'' +
-                    ", pkeyField='" + pkeyField + '\'' +
-                    '}';
         }
     }
 
@@ -75,7 +63,7 @@ public class Catalog {
      */
     public Catalog() {
         // some code goes here
-        mytables = new ArrayList<>();
+        map = new ConcurrentHashMap<>();
     }
 
     /**
@@ -89,18 +77,15 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
-        Mytable mytable = new Mytable(file,name,pkeyField);
-        for (int i = 0; i < mytables.size(); i++) {
-            Mytable tmp = mytables.get(i);
-            if(tmp.getName() ==null){
-                continue;
-            }
-            if(tmp.getName().equals(name) || tmp.getFile().getId() == file.getId()){
-                mytables.set(i,mytable);
+        Mytable table = new Mytable(file, name, pkeyField);
+        for (Map.Entry<Integer, Mytable> entry : map.entrySet()) {
+            if (entry.getValue().getName().equals(name) ) {
+                map.put(entry.getKey(), table);
                 return;
             }
         }
-        mytables.add(mytable);
+        int id = file.getId();
+        map.put(id, table);
     }
 
     public void addTable(DbFile file, String name) {
@@ -124,18 +109,13 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
-        if(name == null){
-            throw new NoSuchElementException();
+        for (Map.Entry<Integer, Mytable> entry : map.entrySet()) {
+            Mytable table = entry.getValue();
+            if (table.getName().equals(name))
+                return table.getDbFile().getId();
         }
-        for (int i = 0; i < mytables.size(); i++) {
-            if(mytables.get(i).getName() == null){
-                continue;
-            }
-            if(mytables.get(i).getName() == name){
-                return mytables.get(i).getFile().getId();
-            }
-        }
-        throw new NoSuchElementException();
+
+        throw new NoSuchElementException("can't find the match table with name " + name);
     }
 
     /**
@@ -146,13 +126,10 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
-        for (int i = 0; i < mytables.size(); i++) {
-            DbFile dbFile = mytables.get(i).getFile();
-            if(dbFile.getId() == tableid){
-                return dbFile.getTupleDesc();
-            }
-        }
-        throw new NoSuchElementException();
+        if (!map.containsKey(tableid))
+            throw new NoSuchElementException("can't find the match table with tableID {" + tableid + "}");
+        Mytable table = map.get(tableid);
+        return table.getDbFile().getTupleDesc();
     }
 
     /**
@@ -163,13 +140,10 @@ public class Catalog {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // some code goes here
-        for (int i = 0; i < mytables.size(); i++) {
-            DbFile dbFile = mytables.get(i).getFile();
-            if(dbFile.getId() == tableid){
-                return dbFile;
-            }
-        }
-        throw new NoSuchElementException();
+        if (!map.containsKey(tableid))
+            throw new NoSuchElementException("can't find the match table with tableID {" + tableid + "}");
+        Mytable table = map.get(tableid);
+        return table.getDbFile();
     }
 
     public String getPrimaryKey(int tableid) {
@@ -184,18 +158,15 @@ public class Catalog {
 
     public String getTableName(int id) {
         // some code goes here
-        for (int i = 0; i < mytables.size(); i++) {
-            DbFile dbFile = mytables.get(i).getFile();
-            if(dbFile.getId() == id){
-                return mytables.get(i).getName();
-            }
-        }
-        throw new NoSuchElementException();
+        if (!map.containsKey(id))
+            throw new NoSuchElementException("can't find the match table with tableID {" + id + "}");
+        Mytable table = map.get(id);
+        return table.getName();
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
-        mytables.clear();
+        map.clear();
         // some code goes here
     }
     

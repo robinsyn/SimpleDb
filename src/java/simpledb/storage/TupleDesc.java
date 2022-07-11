@@ -120,7 +120,10 @@ public class TupleDesc implements Serializable {
      */
     public String getFieldName(int i) throws NoSuchElementException {
         // some code goes here
-        return null;
+        if(i<0 || i>=tupleDescList.size()){
+            throw new NoSuchElementException();
+        }
+        return tupleDescList.get(i).getFieldName();
     }
 
     /**
@@ -246,5 +249,9 @@ public class TupleDesc implements Serializable {
     public String toString() {
         // some code goes here
         return "";
+    }
+
+    public List<TDItem> getTupleDescList() {
+        return tupleDescList;
     }
 }
