@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LockManager {
+    // integer:list --> 第几页:锁
     private Map<Integer, List<Lock>> map; //锁表
 
     public LockManager() {

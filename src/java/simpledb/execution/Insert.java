@@ -2,11 +2,15 @@ package simpledb.execution;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
+import simpledb.common.Type;
 import simpledb.storage.BufferPool;
+import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+
+import java.io.IOException;
 
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
@@ -15,6 +19,16 @@ import simpledb.transaction.TransactionId;
 public class Insert extends Operator {
 
     private static final long serialVersionUID = 1L;
+
+    private final TransactionId tid;
+
+    private OpIterator child;
+
+    private int tableID;
+
+    private final TupleDesc td;
+
+    private boolean state;
 
     /**
      * Constructor.
@@ -32,15 +46,22 @@ public class Insert extends Operator {
     public Insert(TransactionId t, OpIterator child, int tableId)
             throws DbException {
         // some code goes here
+        this.tid = t;
+        this.child = child;
+        this.tableID = tableId;
+        this.td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{"number of inserted tuples"});
+        this.state = false;
     }
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        return this.td;
     }
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+        super.open();
+        child.open();
     }
 
     public void close() {
@@ -66,7 +87,23 @@ public class Insert extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        if (state) return null;
+
+        Tuple t = new Tuple(this.td);
+        int cnt = 0;
+        BufferPool bufferPool = Database.getBufferPool();
+        while (child.hasNext()) {
+            try {
+                bufferPool.insertTuple(tid, this.tableID, child.next());
+            } catch (IOException e) {
+                throw new DbException("fail to insert tuple");
+            }
+            cnt++;
+        }
+
+        t.setField(0, new IntField(cnt));
+        state = true;
+        return t;
     }
 
     @Override
