@@ -14,7 +14,7 @@ public class LockManager {
 //    private Map<Integer, List<Lock>> map; //锁表
 
     // 这里应该用 PageId:list --> 哪个表的第几页:锁
-    //logtest的测试用例TestAbortCommitInterleaved中，对两个表进行插入，第一个表的第1页插入后加了锁，如果是integer:list他们都是第0页，第二个插入则获取不到锁
+    //LogTest的测试用例TestAbortCommitInterleaved中，对两个表进行插入，第一个表的第1页插入后加了锁，如果是integer:list他们都是第0页，第二个表误以为自己加了锁
     private Map<PageId, List<Lock>> map; //锁表
 
     public LockManager() {
