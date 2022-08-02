@@ -11,6 +11,7 @@ import simpledb.transaction.TransactionId;
 import java.io.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -88,7 +89,7 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
+    public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
 //        Page page = map.get(pid);
@@ -99,15 +100,25 @@ public class BufferPool {
 //
 //        return page;
 
-        boolean lockAcquired = false;
-        long start = System.currentTimeMillis();
-        long timeout = new Random().nextInt(2000);
-        while (!lockAcquired) {
+//        boolean lockAcquired = false;
+//        long start = System.currentTimeMillis();
+//        long timeout = new Random().nextInt(2000);
+//        while (!lockAcquired) {
+//            long now = System.currentTimeMillis();
+//            if (now - start > timeout) {
+//                throw new TransactionAbortedException();
+//            }
+//            lockAcquired = lockManager.acquireLock(tid, pid, perm);
+//        }
+
+        long st = System.currentTimeMillis();
+        while (true) {
+            //获取锁，如果获取不到会阻塞
+                if (lockManager.acquireLock(tid, pid, perm)) {
+                    break;
+                }
             long now = System.currentTimeMillis();
-            if (now - start > timeout) {
-                throw new TransactionAbortedException();
-            }
-            lockAcquired = lockManager.acquireLock(tid, pid, perm);
+            if (now - st > 500) throw new TransactionAbortedException();
         }
 
         if (lruCache.get(pid) == null) {
@@ -166,7 +177,7 @@ public class BufferPool {
         // not necessary for lab1|lab2
         if (commit) {
             try {
-                flushPages(tid);
+                flushPages2(tid);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -206,7 +217,7 @@ public class BufferPool {
         //System.out.println(tid.getId());
         for (Page page : pages) {    //用脏页替换buffer中现有的页
             page.markDirty(true, tid);
-            addToBufferPool(page.getId(), page);
+            lruCache.put(page.getId(), page);
         }
     }
 
@@ -259,6 +270,29 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
 
+        LRUCache<PageId, Page>.DLinkedNode head = lruCache.getHead();
+        LRUCache<PageId, Page>.DLinkedNode tail = lruCache.getTail();
+        while (head != tail) {
+            Page value = head.value;
+            if (value != null && value.isDirty() != null) {
+
+                DbFile databaseFile = Database.getCatalog().getDatabaseFile(value.getId().getTableId());
+                try {
+                    Database.getLogFile().logWrite(value.isDirty(), value.getBeforeImage(), value);
+                    Database.getLogFile().force();
+                    //这里不能将脏页标记为不脏，如果这样做则当事务提交的时候，flushpage2函数找不到脏页，无法将更新写入磁盘
+                    //也无法setbeforeimage 详情见LogTest的78行
+                    // value.markDirty(false, null);
+                    databaseFile.writePage(value);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+            head = head.next;
+        }
+
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -272,6 +306,16 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+        LRUCache<PageId, Page>.DLinkedNode head = lruCache.getHead();
+        LRUCache<PageId, Page>.DLinkedNode tail = lruCache.getTail();
+        while (head != tail) {
+            PageId key = head.key;
+            if (key != null && key.equals(pid)) {
+                lruCache.remove(head);
+                return;
+            }
+            head = head.next;
+        }
     }
 
     /**
@@ -281,6 +325,20 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
+
+        Page discard = lruCache.get(pid);
+        DbFile databaseFile = Database.getCatalog().getDatabaseFile(discard.getId().getTableId());
+        try {
+            TransactionId dirtier = discard.isDirty();
+            if (dirtier != null) {
+                Database.getLogFile().logWrite(dirtier, discard.getBeforeImage(), discard);
+                Database.getLogFile().force();
+                discard.markDirty(false, null);
+                databaseFile.writePage(discard);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -288,6 +346,29 @@ public class BufferPool {
     public synchronized  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
+        LRUCache<PageId, Page>.DLinkedNode head = lruCache.getHead();
+        LRUCache<PageId, Page>.DLinkedNode tail = lruCache.getTail();
+        while (head != tail) {
+            Page value = head.value;
+            if (value != null && value.isDirty() != null && value.isDirty().equals(tid)) {
+                DbFile databaseFile = Database.getCatalog().getDatabaseFile(value.getId().getTableId());
+                try {
+                    Database.getLogFile().logWrite(value.isDirty(), value.getBeforeImage(), value);
+                    Database.getLogFile().force();
+                    value.markDirty(false, null);
+                    databaseFile.writePage(value);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            head = head.next;
+        }
+    }
+
+    public synchronized void flushPages2(TransactionId tid) throws IOException {
+        // some code goes here
+        // not necessary for lab1|lab2
+        // System.out.println(tid.getId());
         LRUCache<PageId, Page>.DLinkedNode head = lruCache.getHead();
         LRUCache<PageId, Page>.DLinkedNode tail = lruCache.getTail();
         while (head != tail) {
