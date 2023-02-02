@@ -160,6 +160,8 @@ public class HeapFile implements DbFile {
                 page.markDirty(true, tid);
                 list.add(page);
                 return list;
+            } else {
+                Database.getBufferPool().unsafeReleasePage(tid, new HeapPageId(getId(), i));
             }
         }
 

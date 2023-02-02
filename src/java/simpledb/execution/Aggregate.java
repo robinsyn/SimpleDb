@@ -18,6 +18,7 @@ public class Aggregate extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    //数据源的迭代器
     private OpIterator child;
 
     //select SUM(nums) from table group by id;sum里的称为aggregatorField，groupby后的称为groupByField
@@ -26,6 +27,8 @@ public class Aggregate extends Operator {
 
     private Aggregator.Op aop;
     private Aggregator aggregator;
+
+    //调用aggregator中的迭代返回的结果集迭代
     private OpIterator resIterator;
 
     /**
