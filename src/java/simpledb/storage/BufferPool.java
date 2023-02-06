@@ -177,7 +177,7 @@ public class BufferPool {
         // not necessary for lab1|lab2
         if (commit) {
             try {
-                flushPages2(tid);
+                flushPages(tid);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -347,47 +347,41 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1|lab2
         LRUCache<PageId, Page>.DLinkedNode head = lruCache.getHead();
+        head = head.next;
         LRUCache<PageId, Page>.DLinkedNode tail = lruCache.getTail();
         while (head != tail) {
             Page value = head.value;
+            value.setBeforeImage();
             if (value != null && value.isDirty() != null && value.isDirty().equals(tid)) {
-                DbFile databaseFile = Database.getCatalog().getDatabaseFile(value.getId().getTableId());
-                try {
-                    Database.getLogFile().logWrite(value.isDirty(), value.getBeforeImage(), value);
-                    Database.getLogFile().force();
-                    value.markDirty(false, null);
-                    databaseFile.writePage(value);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                flushPage(value.getId());
             }
             head = head.next;
         }
     }
 
-    public synchronized void flushPages2(TransactionId tid) throws IOException {
-        // some code goes here
-        // not necessary for lab1|lab2
-        // System.out.println(tid.getId());
-        LRUCache<PageId, Page>.DLinkedNode head = lruCache.getHead();
-        LRUCache<PageId, Page>.DLinkedNode tail = lruCache.getTail();
-        while (head != tail) {
-            Page value = head.value;
-            if (value != null && value.isDirty() != null && value.isDirty().equals(tid)) {
-                DbFile databaseFile = Database.getCatalog().getDatabaseFile(value.getId().getTableId());
-                try {
-                    Database.getLogFile().logWrite(value.isDirty(), value.getBeforeImage(), value);
-                    Database.getLogFile().force();
-                    value.markDirty(false, null);
-                    databaseFile.writePage(value);
-                    value.setBeforeImage();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            head = head.next;
-        }
-    }
+//    public synchronized void flushPages2(TransactionId tid) throws IOException {
+//        // some code goes here
+//        // not necessary for lab1|lab2
+//        // System.out.println(tid.getId());
+//        LRUCache<PageId, Page>.DLinkedNode head = lruCache.getHead();
+//        LRUCache<PageId, Page>.DLinkedNode tail = lruCache.getTail();
+//        while (head != tail) {
+//            Page value = head.value;
+//            if (value != null && value.isDirty() != null && value.isDirty().equals(tid)) {
+//                DbFile databaseFile = Database.getCatalog().getDatabaseFile(value.getId().getTableId());
+//                try {
+//                    Database.getLogFile().logWrite(value.isDirty(), value.getBeforeImage(), value);
+//                    Database.getLogFile().force();
+//                    value.markDirty(false, null);
+//                    databaseFile.writePage(value);
+//                    value.setBeforeImage();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//            head = head.next;
+//        }
+//    }
 
 
     /**
